@@ -24,6 +24,7 @@ int                                                  TOKEN(RINTEGER);
 float                                                TOKEN(RFLOAT);
 if                                                   TOKEN(RIF);
 then                                                 TOKEN(RTHEN);
+for                                                  TOKEN(RFOR);
 forever                                              TOKEN(RFOREVER);
 while                                                TOKEN(RWHILE);
 loop                                                 TOKEN(RLOOP);

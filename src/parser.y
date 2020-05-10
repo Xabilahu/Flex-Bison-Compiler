@@ -46,7 +46,8 @@
 %token <str> TMUL TDIV TPLUS TMINUS
 %token <str> TCEQ TCGT TCLT TCGE TCLE TCNE
 %token <str> TSEMIC TCOMMA TCOLON TASSIG TLBRACE TRBRACE TLPAREN TRPAREN
-%token <str> RPROGRAM RINTEGER RFLOAT RIF RTHEN RWHILE RFOREVER RLOOP RFINALLY REXIT RREAD RPRINT RPROC RIN ROUT RINOUT
+%token <str> RPROGRAM RINTEGER RFLOAT RIF RTHEN RWHILE RFOR RFOREVER RLOOP 
+%token <str> RFINALLY REXIT RREAD RPRINT RPROC RIN ROUT RINOUT 
 
 %nonassoc TCEQ TCGT TCLT TCGE TCLE TCNE
 %left TPLUS TMINUS
@@ -146,7 +147,7 @@ lista_de_sentencias : sentencia lista_de_sentencias {$$ = new lista_de_sentencia
 		    
 sentencia : variable TASSIG expresion TSEMIC
 	  { 
-		codigo.anadirInstruccion($1->nom + ":=" + $3->nom + ";");
+		codigo.anadirInstruccion($1->nom + " := " + $3->nom + ";");
 		$$ = new sentenciastruct;
 		$$->exits = codigo.iniLista(0);
 		delete $1; delete $3;
@@ -196,6 +197,21 @@ sentencia : variable TASSIG expresion TSEMIC
 		  codigo.anadirInstruccion("writeln;");
 		  $$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
 		  delete $3;
+	  }
+	  | RFOR TLPAREN tipo variable TASSIG expresion 
+	  {
+		  codigo.anadirDeclaraciones(codigo.iniLista($4->nom), $3->clase);
+		  codigo.anadirInstruccion($4->nom + " := " + $6->nom + ";");
+	  }
+	  TSEMIC M expresion M TSEMIC variable TASSIG expresion TRPAREN bloque M TSEMIC
+	  {
+		  codigo.anadirInstruccion($13->nom + " := " + $15->nom + ";");
+		  codigo.anadirInstruccion("goto " + to_string($9->ref) + ";");
+		  codigo.completarInstrucciones($10->trues, $11->ref);
+		  codigo.completarInstrucciones($10->falses, $18->ref + 2);
+		  codigo.completarInstrucciones($17->exits, $18->ref + 2);
+		  $$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
+		  delete $3; delete $4; delete $6; delete $9; delete $10; delete $11; delete $13; delete $15; delete $17; delete $18;
 	  }
 	  ;
 
