@@ -35,10 +35,12 @@ struct mstruct{
 
 struct variablestruct{
 	std::string nom;
+	std::string tipo;
 };
 
 struct expresionstruct {
   std::string nom ;
+  std::string tipo ;
   std::vector<int> trues ;
   std::vector<int> falses ;
 };

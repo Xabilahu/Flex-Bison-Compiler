@@ -6,7 +6,7 @@ prog fibonacci{
         int n1,fib_Total;
         n1 = 0;
         fib_Total = 1;
-        while fib_total < x loop{ # n = (n-1) + (n-2)
+        while fib_Total < x loop{ # n = (n-1) + (n-2)
             fib_Total = n1 + fib_Total;
             n1 = fib_Total - n1;
         } finally {
