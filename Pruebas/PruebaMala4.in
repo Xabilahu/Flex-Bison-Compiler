@@ -1,0 +1,12 @@
+prog sumaPrimerosDiez{
+    (*
+        Este programa calcula la suma de los primeros 10 números enteros, pero hay un exit if fuera del bucle
+    *)
+    int acumulador;
+    acumulador = 0;
+    for (int i = 1; i <= 10; i = i + 1) {
+        acumulador = acumulador + i;
+    };
+    exit if acumulador > 10000;
+    println(acumulador);
+}

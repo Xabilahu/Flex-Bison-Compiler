@@ -214,14 +214,18 @@ vector<string> Codigo::iniLista(const string &arg)
     return result;
 }
 
-vector<int> *Codigo::unir(vector<int> &list1, vector<int> &list2) 
+bool esVacia(const vector<int> &lista) {
+    return lista.empty();
+}
+
+vector<int> *Codigo::unir(const vector<int> &list1, const vector<int> &list2) 
 {
     vector<int> *merged = new vector<int>(list1);
     merged->insert(merged->end(),list2.begin(),list2.end());
     return merged;
 }
 
-vector<string> *Codigo::unir(vector<string> &list1, vector<string> &list2) 
+vector<string> *Codigo::unir(const vector<string> &list1, const vector<string> &list2) 
 {
     vector<string> *merged = new vector<string>(list1);
     merged->insert(merged->end(),list2.begin(),list2.end());

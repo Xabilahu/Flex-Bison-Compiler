@@ -45,9 +45,11 @@
 %token <str> TCEQ TCGT TCLT TCGE TCLE TCNE
 %token <str> TSEMIC TCOMMA TCOLON TASSIG TLBRACE TRBRACE TLPAREN TRPAREN
 %token <str> RPROGRAM RINTEGER RFLOAT RIF RTHEN RWHILE RFOR RFOREVER RLOOP 
-%token <str> RFINALLY REXIT RREAD RPRINT RPROC RIN ROUT RINOUT 
+%token <str> RFINALLY REXIT RREAD RPRINT RPRINTLN RPROC RIN ROUT RINOUT RAND ROR RNOT
 
-%nonassoc TCEQ TCGT TCLT TCGE TCLE TCNE
+%right RAND ROR
+%left RNOT
+%left TCEQ TCGT TCLT TCGE TCLE TCNE
 %left TPLUS TMINUS
 %left TMUL TDIV
 
@@ -69,7 +71,6 @@
 %start programa
 
 %%
-
 programa: RPROGRAM TIDENTIFIER {codigo.anadirInstruccion(*$1 + " " + *$2 + ";");} bloqueppl 
 		{
 			codigo.anadirInstruccion("halt;");
@@ -77,7 +78,14 @@ programa: RPROGRAM TIDENTIFIER {codigo.anadirInstruccion(*$1 + " " + *$2 + ";");
 			codigo.desempilar();
 		} ;
 
-bloqueppl : TLBRACE declaraciones decl_de_subprogs lista_de_sentencias TRBRACE {delete $4;} ;
+bloqueppl : TLBRACE declaraciones decl_de_subprogs lista_de_sentencias TRBRACE 
+		{
+			if (!$4->exits.empty()){
+				yyerror("Error semántico. Hay algún exit fuera de un bucle.");
+				YYABORT;
+			}
+			delete $4;
+		} ;
 
 bloque : TLBRACE declaraciones lista_de_sentencias TRBRACE {$$ = new bloquestruct; $$->exits = $3->exits; delete $3;} ;
 
@@ -183,7 +191,7 @@ sentencia : variable TASSIG expresion TSEMIC
 			$$ = new sentenciastruct; $$->exits = $5->exits;
 			delete $2; delete $4; delete $5; delete $6;
 		} catch (string s) {
-			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo Codigo::BOOLEANO.");
+			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo booleano.");
 		}
 	  }
 	  | RWHILE RFOREVER M bloque M TSEMIC
@@ -208,7 +216,7 @@ sentencia : variable TASSIG expresion TSEMIC
 			$$->exits = codigo.iniLista(0);
 			delete $2; delete $3; delete $5; delete $6; delete $7; delete $10; delete $11; delete $12;
 		} catch (string s) {
-			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo Codigo::BOOLEANO.");
+			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo booleano.");
 		}
 	  }
 	  | REXIT RIF expresion M TSEMIC
@@ -219,7 +227,7 @@ sentencia : variable TASSIG expresion TSEMIC
 			$$ = new sentenciastruct; $$->exits = $3->trues;
 			delete $3; delete $4;
 		} catch (string s) {
-			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo Codigo::BOOLEANO.");
+			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo booleano.");
 		}
 	  } 
 	  | RREAD TLPAREN variable TRPAREN TSEMIC 
@@ -229,6 +237,12 @@ sentencia : variable TASSIG expresion TSEMIC
 		delete $3;
 	  }
 	  | RPRINT TLPAREN expresion TRPAREN TSEMIC
+	  {
+		  codigo.anadirInstruccion("write " + $3->nom + ";");
+		  $$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
+		  delete $3;
+	  }
+	  | RPRINTLN TLPAREN expresion TRPAREN TSEMIC
 	  {
 		  codigo.anadirInstruccion("write " + $3->nom + ";");
 		  codigo.anadirInstruccion("writeln;");
@@ -364,9 +378,9 @@ expresion : expresion TCEQ expresion
 	  | expresion TCNE expresion
 	  {
 		  try{
-			codigo.comprobarTipos($3->tipo, Codigo::NUMERO);
 			$$ = new expresionstruct;
 			$$->nom = codigo.iniNom();
+			codigo.comprobarTipos($1->tipo, $3->tipo);
 			$$->tipo = Codigo::BOOLEANO;
 			$$->trues = codigo.iniLista(codigo.obtenRef());
 			$$->falses = codigo.iniLista(codigo.obtenRef()+1);
@@ -376,7 +390,52 @@ expresion : expresion TCEQ expresion
 		  } catch (string s) {
 			  yyerror(s.c_str());
 		  }
-	  } 
+	  }
+	  | expresion RAND M expresion
+	  {
+		  try {
+			codigo.comprobarTipos($1->tipo, Codigo::BOOLEANO);
+			codigo.comprobarTipos($4->tipo, Codigo::BOOLEANO);
+			$$ = new expresionstruct;
+			$$->nom = codigo.iniNom();
+			$$->tipo = Codigo::BOOLEANO;
+			codigo.completarInstrucciones($1->trues, $3->ref);
+			$$->trues = $4->trues;
+			$$->falses = *codigo.unir($1->falses, $4->falses);
+			delete $1; delete $3;
+		  } catch (string s) {
+			  yyerror(s.c_str());
+		  }
+	  }
+	  | expresion ROR M expresion
+	  {
+		  try {
+			codigo.comprobarTipos($1->tipo, Codigo::BOOLEANO);
+			codigo.comprobarTipos($4->tipo, Codigo::BOOLEANO);
+			$$ = new expresionstruct;
+			$$->nom = codigo.iniNom();
+			$$->tipo = Codigo::BOOLEANO;
+			codigo.completarInstrucciones($1->falses, $3->ref);
+			$$->trues = *codigo.unir($1->trues, $4->trues);
+			$$->falses = $4->falses;
+			delete $1; delete $3;
+		  } catch (string s) {
+			  yyerror(s.c_str());
+		  }
+	  }
+	  | RNOT expresion
+	  {
+		  try {
+			codigo.comprobarTipos($2->tipo, Codigo::BOOLEANO);
+			$$ = new expresionstruct;
+			$$->nom = codigo.iniNom();
+			$$->tipo = Codigo::BOOLEANO;
+			$$->trues = $2->falses;
+			$$->falses = $2->trues;
+		  } catch (string s) {
+			  yyerror(s.c_str());
+		  }
+	  }
 	  | expresion TPLUS expresion
 	  {
 		  try{

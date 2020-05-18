@@ -88,16 +88,15 @@ public:
 	bool esTipo(const std::string &pTipo, const std::string &pQuery);
 
 	void operacionAritmetica(expresionstruct *dobleDolar, const expresionstruct &op1, const expresionstruct &op2, const std::string &operacion);
-	
-	void operacionBooleana(expresionstruct *dobleDolar, const expresionstruct &op1, const expresionstruct &op2, const std::string &operacion);
 
 	std::string iniNom();
 
 	std::vector<int> iniLista(const int &arg);
 	std::vector<std::string> iniLista(const std::string &arg);
+	bool esVacia(const std::vector<int> &lista);
 
-	std::vector<int> *unir(std::vector<int> &list1, std::vector<int> &list2);
-	std::vector<std::string> *unir(std::vector<std::string> &list1, std::vector<std::string> &list2);
+	std::vector<int> *unir(const std::vector<int> &list1, const std::vector<int> &list2);
+	std::vector<std::string> *unir(const std::vector<std::string> &list1, const std::vector<std::string> &list2);
 
 	static const std::string NUMERO;
 	static const std::string NUMERO_INT;
