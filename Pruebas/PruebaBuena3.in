@@ -30,6 +30,7 @@ prog ejemplo_con_nombre_muy_largo {
    e = 0.1e-1/a;
    (* suma(a,b,c); esto solo para aquellos que 
                    traten llamadas a procedimientos *)
+   suma(a,b,c);
    c = c*(c*d)+e;
    println(c*c);
 } 

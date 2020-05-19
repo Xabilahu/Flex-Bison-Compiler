@@ -80,7 +80,8 @@ programa: RPROGRAM TIDENTIFIER {codigo.anadirInstruccion(*$1 + " " + *$2 + ";");
 
 bloqueppl : TLBRACE declaraciones decl_de_subprogs lista_de_sentencias TRBRACE 
 		{
-			if (!$4->exits.empty()){
+			// if (!codigo.esVacia($4->exits)){
+			if (!$4->exits.empty()) {
 				yyerror("Error semántico. Hay algún exit fuera de un bucle.");
 				YYABORT;
 			}
@@ -274,6 +275,16 @@ sentencia : variable TASSIG expresion TSEMIC
 		} catch (string s){
 			yyerror(s.c_str());
 		}
+	  }
+	  | TIDENTIFIER TLPAREN lista_de_ident TRPAREN TSEMIC
+	  {
+		  try {
+			codigo.llamadaProcedimiento(*$1, $3->lnom);
+			$$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
+			delete $3;
+		  } catch (string s) {
+			  yyerror(s.c_str());
+		  }
 	  }
 	  ;
 

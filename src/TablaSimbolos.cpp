@@ -28,7 +28,7 @@ void TablaSimbolos::anadirVariable(string id, string tipo) {
 /* anadirProcedimiento */
 /***********************/
 
-void TablaSimbolos::anadirProcedimiento(std::string id) {
+void TablaSimbolos::anadirProcedimiento(string id) {
 	InfoSimbolo infoSimbolo;
 	infoSimbolo.tipoId = string("procedimiento");
 	if (!tabla.insert(pair<string, InfoSimbolo> (id, infoSimbolo)).second) {
@@ -91,8 +91,13 @@ pair<string, string> TablaSimbolos::obtenerTiposParametro(string id, int numPara
 /* numArgsProcedimiento */
 /************************/
 
-int TablaSimbolos::numArgsProcedimiento(std::string proc) {
-	return tabla.find(proc)->second.parametrosProc.size();
+int TablaSimbolos::numArgsProcedimiento(string proc) {
+	map<string, InfoSimbolo>::iterator result = tabla.find(proc);
+	if (result != tabla.end()) {
+		return result->second.parametrosProc.size();
+	} else {
+		throw string("Error semántico. Has intentado utilizar el procedimiento " + proc + " antes de declararlo.");
+	}
 }
 
 
