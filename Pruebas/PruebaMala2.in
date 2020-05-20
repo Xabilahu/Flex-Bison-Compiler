@@ -1,6 +1,10 @@
 prog operaciones{
 
-    proc multiplicacion(int x:in;int y:in;int res:out): #Igual funciona como python ¿?
+    (*Este programa calcula la multiplicación 7x5 mediante el uso de un subprograma.
+      El subprograma no es correcto sintácticamente. Se está utilizando la sintáxis de python. *)
+
+    int resultado; # La variable que se declara en el procedimiento es otra diferente.
+    proc multiplicacion(int x:in;int y:in;int res:out): # Los dos puntos son python
         int resultado,menor,mayor;
         resultado = 0;
         (*Seleccionamos el menor de los dos numeros para iterar*)
@@ -20,4 +24,6 @@ prog operaciones{
             res = resultado; #Asignamos al parametro de salida el resultado
         };
     
+    multiplicacion(7, 5, resultado);
+
 }

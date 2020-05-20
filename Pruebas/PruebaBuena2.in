@@ -1,5 +1,8 @@
 prog operaciones{
 
+    (* Este programa calcula la multiplicación 7x5 mediante el uso de un subprograma. *)
+
+    int resultado; # La variable que se declara en el procedimiento es otra diferente.
     proc multiplicacion(int x:in;int y:in;int res:out){
         int resultado,menor,mayor;
         resultado = 0;
@@ -20,4 +23,7 @@ prog operaciones{
             res = resultado; #Asignamos al parametro de salida el resultado
         };
     }
+
+    multiplicacion(7, 5, resultado);
+
 }

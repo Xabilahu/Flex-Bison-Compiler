@@ -6,7 +6,6 @@ const string Codigo::NUMERO_INT = "ent";
 const string Codigo::NUMERO_FLOAT = "real";
 const string Codigo::NUMERO = NUMERO_INT + NUMERO_FLOAT;
 const string Codigo::BOOLEANO = "bool";
-const string Codigo::ERROR = "error";
 
 /****************/
 /* Constructora */
@@ -194,13 +193,17 @@ void Codigo::operacionAritmetica(expresionstruct *dobleDolar, const expresionstr
 
 }
 
-void Codigo::llamadaProcedimiento(const string &proc, const vector<string> &lnom) {
+void Codigo::llamadaProcedimiento(const string &proc, const vector<pair<string, string>> &lparam) {
     try {
-        this->pilaTS.verificarNumArgs(proc, lnom.size());
-        for (unsigned int i = 0; i < lnom.size(); i++){
-            pair<string, string> param = this->pilaTS.obtenerTiposParametro(proc, i);
-            this->comprobarTipos(param.second, this->pilaTS.obtenerTipo(lnom[i]));
-            this->anadirInstruccion("param_" + param.first + " " + lnom[i] + ";");
+        this->pilaTS.verificarNumArgs(proc, lparam.size());
+        for (unsigned int i = 0; i < lparam.size(); i++){
+            pair<string, string> p = this->pilaTS.obtenerTiposParametro(proc, i);
+            if (this->pilaTS.tope().existeId(lparam[i].first)) {
+                this->comprobarTipos(p.second, this->pilaTS.obtenerTipo(lparam[i].first));
+            } else { // Se trata de una variable temporal generada por pasar como parámetro una expresion (por lo tanto no figura en la TS)
+                this->comprobarTipos(p.second, lparam[i].second);
+            }
+            this->anadirInstruccion("param_" + p.first + " " + lparam[i].first + ";");
         }
         this->anadirInstruccion("call " + proc + ";");
     } catch (string s) {
@@ -228,6 +231,15 @@ vector<string> Codigo::iniLista(const string &arg)
     return result;
 }
 
+vector<pair<string, string>> Codigo::iniLista(const string &id, const string &tipo) {
+    vector<pair<string, string>> result;
+    if (id != "") {
+        pair<string, string> par(id, tipo);
+        result.push_back(par);
+    }
+    return result;
+}
+
 bool esVacia(const vector<int> &lista) {
     return lista.empty();
 }
@@ -242,6 +254,13 @@ vector<int> *Codigo::unir(const vector<int> &list1, const vector<int> &list2)
 vector<string> *Codigo::unir(const vector<string> &list1, const vector<string> &list2) 
 {
     vector<string> *merged = new vector<string>(list1);
+    merged->insert(merged->end(),list2.begin(),list2.end());
+    return merged;
+}
+
+vector<pair<string, string>> *Codigo::unir(const vector<pair<string, string>> &list1, const vector<pair<string, string>> &list2) 
+{
+    vector<pair<string, string>> *merged = new vector<pair<string, string>>(list1);
     merged->insert(merged->end(),list2.begin(),list2.end());
     return merged;
 }

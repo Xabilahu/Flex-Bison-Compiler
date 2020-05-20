@@ -1,0 +1,11 @@
+prog sumaDos{
+
+    (* Este programa escribe la suma de dos números utilizando una variable no declarada. *)
+
+    int a, b;
+
+    read(a); read(b);
+    resultado = a + b;
+    println(resultado);
+
+}

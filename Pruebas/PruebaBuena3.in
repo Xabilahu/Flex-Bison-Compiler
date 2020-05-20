@@ -1,5 +1,7 @@
 prog ejemplo_con_nombre_muy_largo {
 
+	(* Programa de ejemplo del enunciado de la práctica. *)
+
  int a, b, c ;
  float d, e ;
 (* esto es un comentario *)
@@ -28,8 +30,6 @@ prog ejemplo_con_nombre_muy_largo {
    read(a); read(b);
    d = 1/b;
    e = 0.1e-1/a;
-   (* suma(a,b,c); esto solo para aquellos que 
-                   traten llamadas a procedimientos *)
    suma(a,b,c);
    c = c*(c*d)+e;
    println(c*c);

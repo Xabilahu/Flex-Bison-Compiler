@@ -1,0 +1,19 @@
+prog cuenta200{
+
+    (* Este programa escribe los números de 1 al 100 mediante un bucle while forever,
+       y los números del 101 al 200 mediante un bucle for en el que hay que hacer castings. *)
+
+    int contador;
+    contador = 1;
+
+    while forever {
+        println(contador);
+        contador = contador + 1;
+        exit if contador == 101;
+    };
+
+    for (float i = 101; i <= 200; i = i + 1) { # Se realizan castings a float de 101 y de 1.
+        println(i);
+    };
+
+}

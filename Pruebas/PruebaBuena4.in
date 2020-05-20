@@ -10,4 +10,4 @@ prog sumaPrimerosDiez{
         exit if acumulador < 0;
     };
     println(acumulador);
-}
+} 

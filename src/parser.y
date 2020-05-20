@@ -9,7 +9,10 @@
    extern int yylex();
    extern int yylineno;
    extern char *yytext;
+
+   extern bool hayError;
    void yyerror (const char *msg) {
+	 hayError = true;
      printf("Line %d: %s\n", yylineno, msg) ;
    }
 
@@ -34,6 +37,7 @@
 	mstruct *m;
 	variablestruct *var;
 	expresionstruct *expr;
+	argumentostruct *arg;
 }
 
 /* 
@@ -67,6 +71,8 @@
 %type <var> variable
 %type <expr> expresion
 %type <m> M
+%type <arg> lista_de_argumentos
+%type <arg> resto_lista_argumentos
 
 %start programa
 
@@ -74,13 +80,13 @@
 programa: RPROGRAM TIDENTIFIER {codigo.anadirInstruccion(*$1 + " " + *$2 + ";");} bloqueppl 
 		{
 			codigo.anadirInstruccion("halt;");
-			codigo.escribir();
+			if (!hayError) codigo.escribir();
 			codigo.desempilar();
 		} ;
 
 bloqueppl : TLBRACE declaraciones decl_de_subprogs lista_de_sentencias TRBRACE 
 		{
-			// if (!codigo.esVacia($4->exits)){
+			// if (!codigo.esVacia($4->exits)){ // Salta undefined reference ¿?
 			if (!$4->exits.empty()) {
 				yyerror("Error semántico. Hay algún exit fuera de un bucle.");
 				YYABORT;
@@ -176,12 +182,10 @@ sentencia : variable TASSIG expresion TSEMIC
 			}
 
 			codigo.anadirInstruccion($1->nom + " := " + tmp + ";");
-			$$ = new sentenciastruct;
-			$$->exits = codigo.iniLista(0);
-			delete $1; delete $3;
-		} catch (string s) {
-			yyerror(s.c_str());
-		}
+		} catch (string s) {}
+		$$ = new sentenciastruct;
+		$$->exits = codigo.iniLista(0);
+		delete $1; delete $3;
 	  }
 	  | RIF expresion RTHEN M bloque M TSEMIC 
 	  {
@@ -189,47 +193,51 @@ sentencia : variable TASSIG expresion TSEMIC
 			codigo.comprobarTipos($2->tipo, Codigo::BOOLEANO);
 			codigo.completarInstrucciones($2->trues, $4->ref);
 			codigo.completarInstrucciones($2->falses, $6->ref);
-			$$ = new sentenciastruct; $$->exits = $5->exits;
-			delete $2; delete $4; delete $5; delete $6;
 		} catch (string s) {
 			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo booleano.");
 		}
+		$$ = new sentenciastruct; $$->exits = $5->exits;
+		delete $2; delete $4; delete $5; delete $6;
 	  }
 	  | RWHILE RFOREVER M bloque M TSEMIC
 	  {
-		codigo.anadirInstruccion("goto" + to_string($3->ref) + ";");
+		codigo.anadirInstruccion("goto " + to_string($3->ref) + ";");
 		codigo.completarInstrucciones($4->exits,$5->ref + 1);
 		$$ = new sentenciastruct;
 		$$->exits = codigo.iniLista(0);
 		delete $3; delete $4; delete $5;
 	  }
-	  | RWHILE M expresion RLOOP M bloque M {codigo.anadirInstruccion("goto");} RFINALLY M bloque M TSEMIC 
+	  | RWHILE M expresion 
 	  {
 		try {
 			codigo.comprobarTipos($3->tipo, Codigo::BOOLEANO);
-			codigo.completarInstrucciones($3->trues,$5->ref);
-			codigo.completarInstrucciones($3->falses,$10->ref);
-			codigo.completarInstrucciones($6->exits,$10->ref);
-			codigo.completarInstrucciones($11->exits,$12->ref);
-			vector<int> tmp = codigo.iniLista($7->ref);
-			codigo.completarInstrucciones(tmp,$2->ref);
-			$$ = new sentenciastruct;
-			$$->exits = codigo.iniLista(0);
-			delete $2; delete $3; delete $5; delete $6; delete $7; delete $10; delete $11; delete $12;
 		} catch (string s) {
-			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo booleano.");
+			yyerror("Error semántico. La condición de parada debe ser de tipo booleano.");
 		}
+	  } 
+	  RLOOP M bloque M {codigo.anadirInstruccion("goto");} RFINALLY M bloque M TSEMIC 
+	  {
+		codigo.completarInstrucciones($3->trues,$6->ref);
+		codigo.completarInstrucciones($3->falses,$11->ref);
+		codigo.completarInstrucciones($7->exits,$11->ref);
+		codigo.completarInstrucciones($12->exits,$13->ref);
+		vector<int> tmp = codigo.iniLista($8->ref);
+		codigo.completarInstrucciones(tmp,$2->ref);
+		
+		$$ = new sentenciastruct;
+		$$->exits = codigo.iniLista(0);
+		delete $2; delete $3; delete $6; delete $7; delete $8; delete $11; delete $12; delete $13;
 	  }
 	  | REXIT RIF expresion M TSEMIC
 	  {
 		try {
 			codigo.comprobarTipos($3->tipo, Codigo::BOOLEANO);
 			codigo.completarInstrucciones($3->falses, $4->ref);
-			$$ = new sentenciastruct; $$->exits = $3->trues;
-			delete $3; delete $4;
 		} catch (string s) {
-			yyerror("Error semántico. La condición de la estructura IF debe ser de tipo booleano.");
+			yyerror("Error semántico. La condición de la estructura EXIT IF debe ser de tipo booleano.");
 		}
+		$$ = new sentenciastruct; $$->exits = $3->trues;
+		delete $3; delete $4;
 	  } 
 	  | RREAD TLPAREN variable TRPAREN TSEMIC 
 	  {
@@ -239,255 +247,309 @@ sentencia : variable TASSIG expresion TSEMIC
 	  }
 	  | RPRINT TLPAREN expresion TRPAREN TSEMIC
 	  {
-		  codigo.anadirInstruccion("write " + $3->nom + ";");
-		  $$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
-		  delete $3;
+		codigo.anadirInstruccion("write " + $3->nom + ";");
+		$$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
+		delete $3;
 	  }
 	  | RPRINTLN TLPAREN expresion TRPAREN TSEMIC
 	  {
-		  codigo.anadirInstruccion("write " + $3->nom + ";");
-		  codigo.anadirInstruccion("writeln;");
-		  $$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
-		  delete $3;
+		codigo.anadirInstruccion("write " + $3->nom + ";");
+		codigo.anadirInstruccion("writeln;");
+		$$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
+		delete $3;
 	  }
 	  | RFOR TLPAREN tipo TIDENTIFIER TASSIG expresion 
 	  {
-		  try{
-			  codigo.comprobarTipos($6->tipo, $3->clase);
-			  codigo.anadirDeclaraciones(codigo.iniLista(*$4), $3->clase);
-			  codigo.anadirInstruccion(*$4 + " := " + $6->nom + ";");
-		  } catch (string s){
-			  yyerror(s.c_str());
-		  }
+		string variableAsignar;
+		try{
+			codigo.comprobarTipos($6->tipo, $3->clase);
+			variableAsignar = $6->nom;
+		} catch (string s){
+			if (codigo.esTipo($3->clase, Codigo::NUMERO_INT)) {
+				variableAsignar = codigo.nuevoId();
+				codigo.anadirInstruccion(variableAsignar + " := real2ent " + $6->nom + ";");
+			} else if (codigo.esTipo($3->clase, Codigo::NUMERO_FLOAT)) {
+				variableAsignar = codigo.nuevoId();
+				codigo.anadirInstruccion(variableAsignar + " := ent2real " + $6->nom + ";");
+			} else {
+				yyerror(s.c_str());
+			}
+		}
+		TablaSimbolos ts;
+		codigo.empilar(ts);
+		codigo.anadirDeclaraciones(codigo.iniLista(*$4), $3->clase);
+		codigo.anadirInstruccion(*$4 + " := " + variableAsignar + ";");
 	  }
-	  TSEMIC M expresion M TSEMIC variable TASSIG expresion TRPAREN bloque M TSEMIC
+	  TSEMIC M expresion
+	  {
+		try {
+			codigo.comprobarTipos($10->tipo, Codigo::BOOLEANO);
+		} catch (string s) {
+			yyerror("Error semántico. La condición de parada debe ser de tipo booleano.");
+		}
+	  }
+	  M TSEMIC variable TASSIG expresion TRPAREN bloque M TSEMIC
 	  {
 		try{
-			codigo.comprobarTipos($10->tipo, Codigo::BOOLEANO);
-			codigo.comprobarTipos($13->tipo, $15->tipo);
-			codigo.anadirInstruccion($13->nom + " := " + $15->nom + ";");
+			codigo.comprobarTipos($14->tipo, $16->tipo);
+			codigo.anadirInstruccion($14->nom + " := " + $16->nom + ";");
 			codigo.anadirInstruccion("goto " + to_string($9->ref) + ";");
-			codigo.completarInstrucciones($10->trues, $11->ref);
-			codigo.completarInstrucciones($10->falses, $18->ref + 2);
-			codigo.completarInstrucciones($17->exits, $18->ref + 2);
-			$$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
-			delete $3; delete $6; delete $9; delete $10; delete $11; delete $13; delete $15; delete $17; delete $18;
+			codigo.completarInstrucciones($10->trues, $12->ref);
+			codigo.completarInstrucciones($10->falses, $19->ref + 2);
+			codigo.completarInstrucciones($18->exits, $19->ref + 2);
 		} catch (string s){
 			yyerror(s.c_str());
 		}
+		codigo.desempilar();
+		$$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
+		delete $3; delete $6; delete $9; delete $10; delete $12; delete $14; delete $16; delete $18; delete $19;
 	  }
-	  | TIDENTIFIER TLPAREN lista_de_ident TRPAREN TSEMIC
+	  | TIDENTIFIER TLPAREN lista_de_argumentos TRPAREN TSEMIC
 	  {
-		  try {
-			codigo.llamadaProcedimiento(*$1, $3->lnom);
-			$$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
-			delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		try {
+			codigo.llamadaProcedimiento(*$1, $3->lparam);
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new sentenciastruct; $$->exits = codigo.iniLista(0);
+		delete $3;
 	  }
 	  ;
+
+lista_de_argumentos : expresion resto_lista_argumentos
+		{
+			$$ = new argumentostruct;
+			$$->lparam = codigo.iniLista($1->nom, $1->tipo);
+			$$->lparam = *codigo.unir($$->lparam, $2->lparam);
+			delete $1; delete $2;
+		} ;
+
+resto_lista_argumentos : TCOMMA expresion resto_lista_argumentos
+		{
+			$$ = new argumentostruct;
+			$$->lparam = codigo.iniLista($2->nom, $2->tipo);
+			$$->lparam = *codigo.unir($$->lparam, $3->lparam);
+			delete $2; delete $3;
+		}
+		| %empty {$$ = new argumentostruct; $$->lparam = codigo.iniLista("", "");}
+		;
 
 M: %empty { $$ = new mstruct; $$->ref = codigo.obtenRef(); } ;
 
 variable: TIDENTIFIER 
-	{ 	try {
-			string tipo = codigo.obtenerTipo(*$1);
-			$$ = new variablestruct; 
-	  		$$->nom = *$1;
-			$$->tipo = tipo;
+	{ 	
+		string tipo;
+		try {
+			tipo = codigo.obtenerTipo(*$1);
 		} catch (string s) {
 			yyerror(s.c_str());
 		}
-	  
+		$$ = new variablestruct; 
+		$$->nom = *$1;
+		$$->tipo = tipo;
 	} ;
 
 expresion : expresion TCEQ expresion
 	  {
-		  try{
+		try{
 			codigo.comprobarTipos($1->tipo, $3->tipo);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			$$->trues = codigo.iniLista(codigo.obtenRef());
-			$$->falses = codigo.iniLista(codigo.obtenRef()+1);
-			codigo.anadirInstruccion("if " + $1->nom + " = " + $3->nom + " goto");
-			codigo.anadirInstruccion("goto");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		$$->trues = codigo.iniLista(codigo.obtenRef());
+		$$->falses = codigo.iniLista(codigo.obtenRef()+1);
+		codigo.anadirInstruccion("if " + $1->nom + " = " + $3->nom + " goto");
+		codigo.anadirInstruccion("goto");
+		delete $1; delete $3;
 	  }
 	  | expresion TCGT expresion
 	  {
-		  try{
+		try{
 			codigo.comprobarTipos($1->tipo, Codigo::NUMERO);
 			codigo.comprobarTipos($3->tipo, Codigo::NUMERO);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			$$->trues = codigo.iniLista(codigo.obtenRef());
-			$$->falses = codigo.iniLista(codigo.obtenRef()+1);
-			codigo.anadirInstruccion("if " + $1->nom + " > " + $3->nom + " goto");
-			codigo.anadirInstruccion("goto");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		$$->trues = codigo.iniLista(codigo.obtenRef());
+		$$->falses = codigo.iniLista(codigo.obtenRef()+1);
+		codigo.anadirInstruccion("if " + $1->nom + " > " + $3->nom + " goto");
+		codigo.anadirInstruccion("goto");
+		delete $1; delete $3;
 	  } 
 	  | expresion TCLT expresion
 	  {
-		  try{
+		try{
 			codigo.comprobarTipos($1->tipo, Codigo::NUMERO);
 			codigo.comprobarTipos($3->tipo, Codigo::NUMERO);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			$$->trues = codigo.iniLista(codigo.obtenRef());
-			$$->falses = codigo.iniLista(codigo.obtenRef()+1);
-			codigo.anadirInstruccion("if " + $1->nom + " < " + $3->nom + " goto");
-			codigo.anadirInstruccion("goto");
-			delete $1; delete $3;
-		 } catch (string s) {
-			  yyerror(s.c_str());
-		 }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		$$->trues = codigo.iniLista(codigo.obtenRef());
+		$$->falses = codigo.iniLista(codigo.obtenRef()+1);
+		codigo.anadirInstruccion("if " + $1->nom + " < " + $3->nom + " goto");
+		codigo.anadirInstruccion("goto");
+		delete $1; delete $3;
 	  } 
 	  | expresion TCGE expresion
 	  {
-		  try{
+		try{
 			codigo.comprobarTipos($1->tipo, Codigo::NUMERO);
 			codigo.comprobarTipos($3->tipo, Codigo::NUMERO);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			$$->trues = codigo.iniLista(codigo.obtenRef());
-			$$->falses = codigo.iniLista(codigo.obtenRef()+1);
-			codigo.anadirInstruccion("if " + $1->nom + " >= " + $3->nom + " goto");
-			codigo.anadirInstruccion("goto");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		$$->trues = codigo.iniLista(codigo.obtenRef());
+		$$->falses = codigo.iniLista(codigo.obtenRef()+1);
+		codigo.anadirInstruccion("if " + $1->nom + " >= " + $3->nom + " goto");
+		codigo.anadirInstruccion("goto");
+		delete $1; delete $3;
 	  }
 	  | expresion TCLE expresion
 	  {
-		  try{
+		try{
 			codigo.comprobarTipos($1->tipo, Codigo::NUMERO);
 			codigo.comprobarTipos($3->tipo, Codigo::NUMERO);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			$$->trues = codigo.iniLista(codigo.obtenRef());
-			$$->falses = codigo.iniLista(codigo.obtenRef()+1);
-			codigo.anadirInstruccion("if " + $1->nom + " <= " + $3->nom + " goto");
-			codigo.anadirInstruccion("goto");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		$$->trues = codigo.iniLista(codigo.obtenRef());
+		$$->falses = codigo.iniLista(codigo.obtenRef()+1);
+		codigo.anadirInstruccion("if " + $1->nom + " <= " + $3->nom + " goto");
+		codigo.anadirInstruccion("goto");
+		delete $1; delete $3;
 	  } 
 	  | expresion TCNE expresion
 	  {
-		  try{
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
+		try{
 			codigo.comprobarTipos($1->tipo, $3->tipo);
-			$$->tipo = Codigo::BOOLEANO;
-			$$->trues = codigo.iniLista(codigo.obtenRef());
-			$$->falses = codigo.iniLista(codigo.obtenRef()+1);
-			codigo.anadirInstruccion("if " + $1->nom + " != " + $3->nom + " goto");
-			codigo.anadirInstruccion("goto");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		$$->trues = codigo.iniLista(codigo.obtenRef());
+		$$->falses = codigo.iniLista(codigo.obtenRef()+1);
+		codigo.anadirInstruccion("if " + $1->nom + " != " + $3->nom + " goto");
+		codigo.anadirInstruccion("goto");
+		delete $1; delete $3;
 	  }
 	  | expresion RAND M expresion
 	  {
-		  try {
+		try {
 			codigo.comprobarTipos($1->tipo, Codigo::BOOLEANO);
 			codigo.comprobarTipos($4->tipo, Codigo::BOOLEANO);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			codigo.completarInstrucciones($1->trues, $3->ref);
-			$$->trues = $4->trues;
-			$$->falses = *codigo.unir($1->falses, $4->falses);
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		codigo.completarInstrucciones($1->trues, $3->ref);
+		$$->trues = $4->trues;
+		$$->falses = *codigo.unir($1->falses, $4->falses);
+		delete $1; delete $3;
 	  }
 	  | expresion ROR M expresion
 	  {
-		  try {
+		try {
 			codigo.comprobarTipos($1->tipo, Codigo::BOOLEANO);
 			codigo.comprobarTipos($4->tipo, Codigo::BOOLEANO);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			codigo.completarInstrucciones($1->falses, $3->ref);
-			$$->trues = *codigo.unir($1->trues, $4->trues);
-			$$->falses = $4->falses;
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		codigo.completarInstrucciones($1->falses, $3->ref);
+		$$->trues = *codigo.unir($1->trues, $4->trues);
+		$$->falses = $4->falses;
+		delete $1; delete $3;
 	  }
 	  | RNOT expresion
 	  {
-		  try {
+		try {
 			codigo.comprobarTipos($2->tipo, Codigo::BOOLEANO);
-			$$ = new expresionstruct;
-			$$->nom = codigo.iniNom();
-			$$->tipo = Codigo::BOOLEANO;
-			$$->trues = $2->falses;
-			$$->falses = $2->trues;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+		}
+		$$ = new expresionstruct;
+		$$->nom = codigo.iniNom();
+		$$->tipo = Codigo::BOOLEANO;
+		$$->trues = $2->falses;
+		$$->falses = $2->trues;
 	  }
 	  | expresion TPLUS expresion
 	  {
-		  try{
-			$$ = new expresionstruct;
+		$$ = new expresionstruct;
+		try{
 			codigo.operacionAritmetica($$, *$1, *$3, *$2);
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+			$$->nom = codigo.iniNom();
+			$$->tipo = $1->tipo;
+			$$->trues = codigo.iniLista(0);
+			$$->falses = codigo.iniLista(0);
+		}
+		delete $1; delete $3;
 	  } 
 	  | expresion TMINUS expresion
 	  {
-		  try{
-			$$ = new expresionstruct;
+		$$ = new expresionstruct;
+		try{
 			codigo.operacionAritmetica($$, *$1, *$3, "-");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+			$$->nom = codigo.iniNom();
+			$$->tipo = $1->tipo;
+			$$->trues = codigo.iniLista(0);
+			$$->falses = codigo.iniLista(0);
+		}
+		delete $1; delete $3;
 	  } 
 	  | expresion TMUL expresion
 	  {
-		  try{
-			$$ = new expresionstruct;
+		$$ = new expresionstruct;
+		try{
 			codigo.operacionAritmetica($$, *$1, *$3, "*");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
+		} catch (string s) {
+			yyerror(s.c_str());
+			$$->nom = codigo.iniNom();
+			$$->tipo = $1->tipo;
+			$$->trues = codigo.iniLista(0);
+			$$->falses = codigo.iniLista(0);
+		}
+		delete $1; delete $3;
 	  } 
 	  | expresion TDIV expresion
 	  {
-		  try{
-			$$ = new expresionstruct;
-			codigo.anadirInstruccion("if " + $3->nom + " = 0 goto ErrorDiv0;");
+		$$ = new expresionstruct;
+		codigo.anadirInstruccion("if " + $3->nom + " = 0 goto ErrorDiv0;");
+		try{
 			codigo.operacionAritmetica($$, *$1, *$3, "/");
-			delete $1; delete $3;
-		  } catch (string s) {
-			  yyerror(s.c_str());
-		  }
-			
+		} catch (string s) {
+			yyerror(s.c_str());
+			$$->nom = codigo.iniNom();
+			$$->tipo = $1->tipo;
+			$$->trues = codigo.iniLista(0);
+			$$->falses = codigo.iniLista(0);
+		}
+		delete $1; delete $3;
 	  } 
 	  | variable
 	  {

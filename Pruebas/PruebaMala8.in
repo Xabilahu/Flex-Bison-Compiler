@@ -1,0 +1,17 @@
+prog suma{
+
+    (* Este programa escribe la suma de dos números utilizando una variable en un ámbito incorrecto. *)
+
+    int a, b, resultado;
+
+    proc sumaDos(int x, y: in; int res: out) {
+        int tmp;
+        tmp = x + y;
+        res = tmp;
+    }
+
+    read(a); read(b);
+    sumaDos(a, b, resultado);
+    println(tmp);
+
+}

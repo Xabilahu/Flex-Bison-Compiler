@@ -79,6 +79,7 @@ public:
 	/* Añade la instrucción endproc y desempila la tabla de símbolos. */
 	void finProcedimiento();
 
+	/* Devuelve true si pTipo1 está contenido en pTipo2. */
 	void comprobarTipos(const std::string &pTipo1, const std::string &pTipo2);
 
 	/* Devuleve el tipo de la variable id. */
@@ -87,24 +88,47 @@ public:
 	/* Devuelve True si pQuery es del tipo pTipo. */
 	bool esTipo(const std::string &pTipo, const std::string &pQuery);
 
+	/* Ejecuta la operación aritmética &operacion, comprobando tipos y realizando casting si fuera necesario. */
 	void operacionAritmetica(expresionstruct *dobleDolar, const expresionstruct &op1, const expresionstruct &op2, const std::string &operacion);
 
-	void llamadaProcedimiento(const std::string &proc, const std::vector<std::string> &lnom);
+	/* Comprueba si existe el procedimiento, su número de argumentos y tipos. */
+	void llamadaProcedimiento(const std::string &proc, const std::vector<std::pair<std::string, std::string>> &lnom);
 
+	/* Devuelve un string vacío */
 	std::string iniNom();
 
+	/* Devuelve una lista de enteros vacía en caso de que &arg sea 0, en otro caso devuelve la lista con &arg. */
 	std::vector<int> iniLista(const int &arg);
+
+	/* Devuelve una lista de string vacía en caso de que &arg sea un string vacío, en otro caso devuelve la lista con &arg. */
 	std::vector<std::string> iniLista(const std::string &arg);
+
+	/* Devuelve una lista de pares de strings vacía en caso de que &id sea un string vacío, en otro caso devuelve la lista con el par <id, tipo>. */
+	std::vector<std::pair<std::string, std::string>> iniLista(const std::string &id, const std::string &tipo);
+
+	/* Devuelve true si &lista es una lista de enteros vacía. */
 	bool esVacia(const std::vector<int> &lista);
 
+	/* Devuelve el puntero a la lista resultante de unir las listas &list1 y &list2. */
 	std::vector<int> *unir(const std::vector<int> &list1, const std::vector<int> &list2);
-	std::vector<std::string> *unir(const std::vector<std::string> &list1, const std::vector<std::string> &list2);
 
+	/* Devuelve el puntero a la lista resultante de unir las listas &list1 y &list2. */
+	std::vector<std::string> *unir(const std::vector<std::string> &list1, const std::vector<std::string> &list2);
+	
+	/* Devuelve el puntero a la lista resultante de unir las listas &list1 y &list2. */
+	std::vector<std::pair<std::string, std::string>> *unir(const std::vector<std::pair<std::string, std::string>> &list1, const std::vector<std::pair<std::string, std::string>> &list2);
+
+	/* Constante que indica el tipo numérico, tanto ent como real. */
 	static const std::string NUMERO;
+
+	/* Constante que indica el tipo entero. */
 	static const std::string NUMERO_INT;
+
+	/* Constante que indica el tipo real. */ 
 	static const std::string NUMERO_FLOAT;
+
+	/* Constante que indica el tipo booleano. */
 	static const std::string BOOLEANO;
-	static const std::string ERROR;
 
 };
 

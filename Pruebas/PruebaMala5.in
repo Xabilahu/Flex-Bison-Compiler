@@ -1,0 +1,18 @@
+prog enRango{
+
+    (* Este programa escribe 1 si un número está en el rango, y 0 en caso contrario.
+       Error porque se asigna una expresión booleana a un entero.*)
+
+    int x, limiteInf, limiteSup;
+    int estaEnRango;
+
+    read(x); read(limiteInf); read(limiteSup);
+    estaEnRango = limiteInf >= x and x <= limiteSup;
+    if estaEnRango then {
+        println(1);
+    };
+    if not estaEnRango then {
+        println(0);
+    };
+
+}
