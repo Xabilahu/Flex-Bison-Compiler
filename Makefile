@@ -24,6 +24,7 @@ test: $(SRCDIR)/parser $(TESTDIR)/*.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaBuena5.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaBuena6.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaBuena7.in
+	$(SRCDIR)/parser < $(TESTDIR)/PruebaBuena8.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaMala1.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaMala2.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaMala3.in
@@ -33,3 +34,4 @@ test: $(SRCDIR)/parser $(TESTDIR)/*.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaMala7.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaMala8.in
 	$(SRCDIR)/parser < $(TESTDIR)/PruebaMala9.in
+	$(SRCDIR)/parser < $(TESTDIR)/PruebaMala10.in

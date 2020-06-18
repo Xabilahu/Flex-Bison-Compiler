@@ -79,7 +79,7 @@ public:
 	/* Añade la instrucción endproc y desempila la tabla de símbolos. */
 	void finProcedimiento();
 
-	/* Devuelve true si pTipo1 está contenido en pTipo2. */
+	/* Lanza una excepcion si pTipo1 no está contenido en pTipo2. */
 	void comprobarTipos(const std::string &pTipo1, const std::string &pTipo2);
 
 	/* Devuleve el tipo de la variable id. */
@@ -92,7 +92,7 @@ public:
 	void operacionAritmetica(expresionstruct *dobleDolar, const expresionstruct &op1, const expresionstruct &op2, const std::string &operacion);
 
 	/* Comprueba si existe el procedimiento, su número de argumentos y tipos. */
-	void llamadaProcedimiento(const std::string &proc, const std::vector<std::pair<std::string, std::string>> &lnom);
+	void llamadaProcedimiento(const std::string &proc, const std::vector<std::pair<std::string, std::string>> &lparam);
 
 	/* Devuelve un string vacío */
 	std::string iniNom();

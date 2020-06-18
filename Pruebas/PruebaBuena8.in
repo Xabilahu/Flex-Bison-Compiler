@@ -1,0 +1,15 @@
+prog enRango{
+
+    (* Este programa escribe 1 si un número está en el rango, y 0 en caso contrario. *)
+
+    int x, limiteInf, limiteSup;
+
+    read(x); read(limiteInf); read(limiteSup);
+    if ((not (x < limiteInf)) and (not (x > limiteSup))) then {
+        println(1);
+    };
+    if (x < limiteInf or x > limiteSup) then {
+        println(0);
+    };
+
+}

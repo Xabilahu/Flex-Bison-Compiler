@@ -290,6 +290,9 @@ sentencia : variable TASSIG expresion TSEMIC
 	  }
 	  M TSEMIC variable TASSIG expresion TRPAREN bloque M TSEMIC
 	  {
+		if (*$4 != $14->nom) {
+			yyerror(string("Error semántico. Se debe actualizar la variable " + string(*$4) + " no la variable " + $14->nom + ".").c_str());
+		}
 		try{
 			codigo.comprobarTipos($14->tipo, $16->tipo);
 			codigo.anadirInstruccion($14->nom + " := " + $16->nom + ";");

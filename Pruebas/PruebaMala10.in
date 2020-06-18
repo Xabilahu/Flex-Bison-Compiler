@@ -1,0 +1,11 @@
+prog sumaPrimerosDiez{
+    (*
+        Este programa calcula la suma de los primeros 10 números enteros, pero no se actualiza la variable declarada en el for.
+    *)
+    int acumulador;
+    acumulador = 0;
+    for (int i = 1; i <= 10; acumulador = acumulador + 1) {
+        i = i + 1;
+    };
+    println(acumulador);
+}
